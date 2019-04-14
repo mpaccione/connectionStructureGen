@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.4.23/p5.min.js"></script>
+	<title>Connection Structure Particle System</title>
+</head>
+<body>
+<style type="text/css">
+	html, body {
+		overflow: hidden;
+		margin: 0;
+	}
+</style>
+
+<script type="text/javascript">
+
+//P5 Setup
+function setup(){
+	var cWidth = window.innerWidth,
+		cHeight = window.innerHeight,
+		init = false,
+		emit = true,
+		maxBalls = 300,
+		backgroundId = 0,
+		middlegroundId = 0,
+		foregroundId = 0,
+		ballMasterObj = {
+			foreground: {},
+			middleground: {},
+			background: {}
+		},
+		layers = ["background", "middleground", "foreground"],
+		backgroundColorArray = ['rgba(0,0,0,1)','rgba(255,255,255,1)','rgba(0,0,0,1)','rgba(0,0,0,1)','rgba(110,123,139,1)','rgba(0,160,214,1)'],
+		ballColorArray = [[255,255,255],[0,0,0],[0,255,0],[255,105,180],[255,255,255],[255,255,255]],
+		colorIndex = 0,
+		ballOpacityArray = [[0.2,0.4,0.6],[0.2,0.4,0.6],[0.2,0.4,0.6],[0.1,0.2,0.4],[0.2,0.4,0.6],[0.2,0.4,0.6]],
+		triangleOpacityArray = [[0.05,0.1,0.2],[0.1,0.2,0.4],[0.1,0.2,0.4],[0.1,0.2,0.4],[0.1,0.2,0.4],[0.2,0.4,0.6]],
+		colorIndex = 0,
+		posArray = [];
+
+	createCanvas(cWidth, cHeight);
+}
+
+//Ball Constructor Function
+function ball(posX, posY, speedX, speedY, size, id, color, triangleColor, depth) {
+  
+	this.posX = posX,
+	this.posY = posY,
+	this.speedX = speedX || 5,
+	this.speedY = speedY || 5,
+	this.size = size || 50,
+	this.id = id,
+	this.connectedTo = [],
+	this.color = color,
+	this.stroke = color,
+	this.triangleColor = triangleColor,
+	this.depth = depth,
+
+	this.strokeBall = function(){
+		return stroke(this.stroke);
+	},
+
+	this.colorBall = function(){
+		return fill(this.color);
+	},
+
+	this.colorTriangle = function(){
+		return fill(this.triangleColor);
+	},
+
+	this.drawBall = function(){
+		return ellipse(this.posX, this.posY, this.size, this.size);
+	},
+
+	this.moveBall = function(){
+		if (this.posX > width){ this.speedX = random(1) * -1 }; 
+		if (this.posY > height){ this.speedY = random(1) * -1 };
+		if (this.posX < 0){ this.speedX = random(1) * 1 };
+		if (this.posY < 0){ this.speedY = random(1) * 1 };
+		this.posX += this.speedX;
+		this.posY += this.speedY;
+	},
+
+	this.updatePos = function(){
+		var tempArray = [this.posX, this.posY];
+		posArray.push(tempArray);
+	},
+
+	this.lineCheck = function(a, depth){
+
+		for (var i = 0; i < a; i++) {
+
+			//Check if within line drawing proximity
+			var that = ballMasterObj[depth][i],
+				d = int(dist(that.posX, that.posY, this.posX, this.posY));
+
+			if (d < 150) {
+				line(that.posX, that.posY, this.posX, this.posY);
+				this.connectedTo.push(that.id);
+				that.connectedTo.push(this.id);
+			}
+		}
+
+	},
+
+	this.triangleCheck = function(i, depth){
+		
+		//Iterate over all balls
+		for (var a = 0; a < i; a++) {
+
+			var thisBall = ballMasterObj[depth][a],
+				thisBallConnections = ballMasterObj[depth][a].connectedTo.length,
+				thatBall = null,
+	  			otherBall = null;
+
+				//Performance Check
+				if (thisBallConnections > 0) {
+
+					//Get this ball's connected to id's. Compare all id's against each other.
+					for (var b = 0; b < thisBallConnections; b++) {
+						var thatBallId = thisBall.connectedTo[b],
+							thatBall = ballMasterObj[depth][thatBallId];
+
+						for (var c = 0, len = thatBall.connectedTo.length; c < len; c++) {
+							tempId = ballMasterObj[depth][thatBallId].connectedTo[c] == thisBall.id ? false : ballMasterObj[depth][thatBallId].connectedTo[c];
+						}
+							
+						if (tempId) {
+							otherBall = ballMasterObj[depth][tempId];
+							triangle(thisBall.posX, thisBall.posY, thatBall.posX, thatBall.posY, otherBall.posX, otherBall.posY);
+						}
+
+					}
+
+				}
+
+		  	thisBall.connectedTo = [];
+		}
+
+	}
+}
+
+//Render
+function draw(){
+	//Emit balls on start
+	if (!init) {emitter();}
+
+	//Rendering
+	background(backgroundColorArray[colorIndex]);
+	drawLayers("background", backgroundId);
+	drawLayers("middleground", middlegroundId);
+	drawLayers("foreground", foregroundId);
+	
+	//Clear Positions at End of Frame
+	posArray = [];
+
+	//User Interaction
+	if (keyIsDown(UP_ARROW)) {
+		maxBalls++;
+		emitter();
+	}
+
+	if (keyIsDown(DOWN_ARROW)) {
+		maxBalls--;
+		if (backgroundId >= maxBalls * 0.5) {
+			ballMasterObj["background"][backgroundId] = {};
+			backgroundId--;
+		} else if (middlegroundId >= maxBalls * 0.3){
+			ballMasterObj["middleground"][middlegroundId] = {};
+			middlegroundId--;
+		} else {
+			ballMasterObj["foreground"][foregroundId] = {};
+			foregroundId--;
+		}
+	}
+
+}
+
+//User Interaction
+function keyPressed(){
+	var colorArrayLength = backgroundColorArray.length-1;
+
+	if (keyCode === RIGHT_ARROW) {
+		if (colorIndex < colorArrayLength) {
+			reset();
+			colorIndex++;
+			updateExistingColors("triangleFill");
+		} else if (colorIndex = colorArrayLength){ colorIndex = 0; }
+	}
+
+	if (keyCode === LEFT_ARROW) {
+		if (colorIndex > 0) {
+			reset();
+			colorIndex--;
+			updateExistingColors("noTriangleFill");
+		} else if (colorIndex == 0){ colorIndex = colorArrayLength; }
+	}
+
+	function reset(){
+		backgroundId = 0,
+		middlegroundId = 0,
+		backgroundId = 0;
+		emitter();
+	}
+
+	function updateExistingColors(triangle){
+
+		function rgba(array, alphaArray, alphaIndex){
+			return "rgba("+array[colorIndex][0]+","+array[colorIndex][1]+","+array[colorIndex][2]+","+alphaArray[colorIndex][alphaIndex]+")";
+		}
+
+		if (triangle == "triangleFill"){
+			for (var i = 0, len = layers.length; i < len; i++) {
+				for (var a = 0; a < backgroundId; a++) {
+					if (ballMasterObj[layers[i]][a]){
+						ballMasterObj[layers[i]][a].color = rgba(ballColorArray, ballOpacityArray, i);
+						ballMasterObj[layers[i]][a].stroke = rgba(ballColorArray, ballOpacityArray, i);
+						ballMasterObj[layers[i]][a].triangleColor = rgba(ballColorArray, triangleOpacityArray, i);
+					}
+				}
+			}
+		} else {
+			for (var i = 0, len = layers.length; i < len; i++) {
+				for (var a = 0; a < backgroundId; a++) {
+					if (ballMasterObj[layers[i]][a]){
+						ballMasterObj[layers[i]][a].color = rgba(ballColorArray, ballOpacityArray, i);
+						ballMasterObj[layers[i]][a].stroke = rgba(ballColorArray, ballOpacityArray, i);
+						ballMasterObj[layers[i]][a].triangleColor = "rgba(0,0,0,0)";
+					}
+				}
+			}
+		}
+
+		
+	}
+}
+
+//Frame Operations for different layers
+function drawLayers(depth, depthId){
+	for (var i = 0; i < depthId; i++) {
+		ballMasterObj[depth][i].moveBall();
+		ballMasterObj[depth][i].strokeBall();
+		ballMasterObj[depth][i].colorBall();
+		ballMasterObj[depth][i].drawBall();
+		ballMasterObj[depth][i].updatePos();
+		ballMasterObj[depth][i].lineCheck(i, depth);
+		ballMasterObj[depth][i].colorTriangle();
+		ballMasterObj[depth][i].triangleCheck(i, depth);
+	}
+}
+
+//Create balls at different depths with three layers of emitters
+function emitter(){
+	if (backgroundId+middlegroundId+foregroundId < maxBalls) {emit = true};
+
+	while (emit == true){
+
+		var x = random(0, width),
+			y = random(0, height),
+			r = ballColorArray[colorIndex][0],
+			g = ballColorArray[colorIndex][1],
+			b = ballColorArray[colorIndex][2];
+
+		//Background Emitter
+		if (backgroundId <= maxBalls * 0.5) {
+
+			var xSpeed = random(-0.33, 0.33),
+				ySpeed = random(-0.33, 0.33),
+				newBallBackground = new ball(x, y, xSpeed, ySpeed, 10, backgroundId, 'rgba('+r+','+g+','+b+', 0.2)', 'rgba('+r+','+g+','+b+', 0)', "background");
+
+			ballMasterObj["background"][backgroundId] = newBallBackground;
+			backgroundId++;
+
+		//Middleground Emitter
+		} else if (middlegroundId <= maxBalls * 0.3) {
+
+			var xSpeed = random(-0.66, 0.66),
+				ySpeed = random(-0.66, 0.66),
+				newBallMiddleground = new ball(x, y, xSpeed, ySpeed, 15, middlegroundId, 'rgba('+r+','+g+','+b+', 0.4)', 'rgba('+r+','+g+','+b+', 0)', "middleground");
+
+			ballMasterObj["middleground"][middlegroundId] = newBallMiddleground;
+			middlegroundId++;
+
+		//Foreground Emitter
+		} else {
+
+			var xSpeed = random(-1, 1),
+				ySpeed = random(-1, 1),
+				newBallForeground = new ball(x, y, xSpeed, ySpeed, 20, foregroundId, 'rgba('+r+','+g+','+b+', 0.6)', 'rgba('+r+','+g+','+b+', 0)', "foreground");
+
+			ballMasterObj["foreground"][foregroundId] = newBallForeground;
+			foregroundId++;
+
+			//Shutoff Emitters
+			if (backgroundId+middlegroundId+foregroundId >= maxBalls) { emit = false; }
+		}
+		
+	}
+
+}
+
+</script>
+
+</body>
+</html>
