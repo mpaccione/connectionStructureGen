@@ -14,30 +14,30 @@
 
 <script type="text/javascript">
 
+var cWidth = window.innerWidth,
+	cHeight = window.innerHeight,
+	init = false,
+	emit = true,
+	maxBalls = 300,
+	backgroundId = 0,
+	middlegroundId = 0,
+	foregroundId = 0,
+	ballMasterObj = {
+		foreground: {},
+		middleground: {},
+		background: {}
+	},
+	layers = ["background", "middleground", "foreground"],
+	backgroundColorArray = ['rgba(0,0,0,1)','rgba(255,255,255,1)','rgba(0,0,0,1)','rgba(0,0,0,1)','rgba(110,123,139,1)','rgba(0,160,214,1)'],
+	ballColorArray = [[255,255,255],[0,0,0],[0,255,0],[255,105,180],[255,255,255],[255,255,255]],
+	colorIndex = 0,
+	ballOpacityArray = [[0.2,0.4,0.6],[0.2,0.4,0.6],[0.2,0.4,0.6],[0.1,0.2,0.4],[0.2,0.4,0.6],[0.2,0.4,0.6]],
+	triangleOpacityArray = [[0.05,0.1,0.2],[0.1,0.2,0.4],[0.1,0.2,0.4],[0.1,0.2,0.4],[0.1,0.2,0.4],[0.2,0.4,0.6]],
+	colorIndex = 0,
+	posArray = [];
+
 //P5 Setup
 function setup(){
-	var cWidth = window.innerWidth,
-		cHeight = window.innerHeight,
-		init = false,
-		emit = true,
-		maxBalls = 300,
-		backgroundId = 0,
-		middlegroundId = 0,
-		foregroundId = 0,
-		ballMasterObj = {
-			foreground: {},
-			middleground: {},
-			background: {}
-		},
-		layers = ["background", "middleground", "foreground"],
-		backgroundColorArray = ['rgba(0,0,0,1)','rgba(255,255,255,1)','rgba(0,0,0,1)','rgba(0,0,0,1)','rgba(110,123,139,1)','rgba(0,160,214,1)'],
-		ballColorArray = [[255,255,255],[0,0,0],[0,255,0],[255,105,180],[255,255,255],[255,255,255]],
-		colorIndex = 0,
-		ballOpacityArray = [[0.2,0.4,0.6],[0.2,0.4,0.6],[0.2,0.4,0.6],[0.1,0.2,0.4],[0.2,0.4,0.6],[0.2,0.4,0.6]],
-		triangleOpacityArray = [[0.05,0.1,0.2],[0.1,0.2,0.4],[0.1,0.2,0.4],[0.1,0.2,0.4],[0.1,0.2,0.4],[0.2,0.4,0.6]],
-		colorIndex = 0,
-		posArray = [];
-
 	createCanvas(cWidth, cHeight);
 }
 
